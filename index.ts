@@ -1,25 +1,27 @@
 import type { log } from 'console';
 import express from 'express';
 import { writeFileSync, readFileSync} from 'fs';
+import multer from 'multer';
 
 const app = express();
 const PORT = 4555;
 
-// databending algorithm
-function glitchAudioBuffer(inputBuffer: Buffer, errorRate: number = 0.01): Buffer {
-    // create a copy of the original file
-    const outputBuffer = Buffer.from(inputBuffer);
+const upload = multer({ storage: multer.memoryStorage() });
 
-    // waf headers are present from 0 -> 44 bytes space
-    const HEADER_SIZE = 44;
-    for (let i = HEADER_SIZE; i < outputBuffer.length; i++) {
-        if (Math.random() < errorRate) {
-            // randomly flip individual bits using Bitwise xor
+app.use(express.static('public'));
+
+const HEADER_SIZE = 44;
+
+// bitflipper algorithm (default)
+function bitFlipper(buffer: Buffer, intensity: number): Buffer {
+    const out = Buffer.from(buffer);
+    for (let i = HEADER_SIZE; i < out.length; i++) {
+        if (Math.random() < intensity) {
             const randomBitMask = 1 << Math.floor(Math.random() * 8);
-            outputBuffer[i] = outputBuffer[i] ^ randomBitMask;
+            out[i] = out[i] ^ randomBitMask;
         }
     }
-    return outputBuffer;
+    return out;
 }
 
 app.get('/glitch', (req, res) => {
