@@ -1,5 +1,9 @@
 # audio-glitch
 
+The `headers` of the audio file is not formatted. For wav it's the first 44 bytes.
+
+Test audio got from: https://samplelib.com/sample-wav.html
+
 To install dependencies:
 
 ```bash
