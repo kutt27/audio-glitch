@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Databender & Glitcher</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #121214;
+            color: #e1e1e6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #1d1d22;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            width: 100%;
+            max-width: 450px;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #04d361;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        input[type="file"], select, input[type="range"] {
+            width: 100%;
+            padding: 10px;
+            background: #29292e;
+            border: 1px solid #323238;
+            border-radius: 6px;
+            color: #fff;
+            box-sizing: border-box;
+        }
+        input[type="range"] {
+            padding: 0;
+            cursor: pointer;
+        }
+        .range-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #8f8f9d;
+            margin-top: 4px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #04d361;
+            border: none;
+            border-radius: 6px;
+            color: #000;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #00b347;
+        }
+        button:disabled {
+            background: #4d4d4d;
+            cursor: not-allowed;
+            color: #a8a8b3;
+        }
+        .result-panel {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #323238;
+            text-align: center;
+            display: none;
+        }
+        audio {
+            width: 100%;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Audio Databender</h1>
+
+    <form id="glitchForm">
+        <div class="form-group">
+            <label for="audiofile">Upload WAV File:</label>
+            <input type="file" id="audiofile" name="audiofile" accept="audio/wav" required>
+        </div>
+
+        <div class="form-index form-group">
+            <label for="algorithm">Select Glitch Algorithm:</label>
+            <select id="algorithm" name="algorithm">
+                <option value="flipper">Bit Flipper (Static / Noise)</option>
+                <option value="crusher">Bit Crusher (Retro 8-Bit Low-Fi)</option>
+                <option value="stutter">Stutter (Micro-Looping / Repeats)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="intensity">Intensity / Corruption Rate:</label>
+            <input type="range" id="intensity" name="intensity" min="0.001" max="0.1" step="0.001" value="0.01">
+            <div class="range-labels">
+                <span>Subtle</span>
+                <span id="intensityVal">0.01</span>
+                <span>Destroyed</span>
+            </div>
+        </div>
+
+        <button type="submit" id="submitBtn">Bend Audio</button>
+    </form>
+
+    <div class="result-panel" id="resultPanel">
+        <label>Glitched Output:</label>
+        <audio id="audioPlayer" controls></audio>
+    </div>
+</div>
+
+<script>
+    const form = document.getElementById('glitchForm');
+    const intensityInput = document.getElementById('intensity');
+    const intensityVal = document.getElementById('intensityVal');
+    const submitBtn = document.getElementById('submitBtn');
+    const resultPanel = document.getElementById('resultPanel');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const algoSelect = document.getElementById('algorithm');
+
+    // Update the slider threshold labels on input
+    intensityInput.addEventListener('input', (e) => {
+        intensityVal.textContent = e.target.value;
+    });
+
+    // Dynamically adjust slider scales depending on the algorithm's requirements
+    algoSelect.addEventListener('change', (e) => {
+        if (e.target.value === 'crusher') {
+            intensityInput.min = "0.1";
+            intensityInput.max = "0.9";
+            intensityInput.step = "0.1";
+            intensityInput.value = "0.4";
+        } else {
+            intensityInput.min = "0.001";
+            intensityInput.max = "0.1";
+            intensityInput.step = "0.001";
+            intensityInput.value = "0.01";
+        }
+        intensityVal.textContent = intensityInput.value;
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing Audio...';
+        resultPanel.style.display = 'none';
+
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch('/process-audio', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) throw new Error('Processing failed');
+
+            // Convert raw audio response data back into a locally accessible URL
+            const blob = await response.blob();
+            const audioUrl = URL.createObjectURL(blob);
+
+            // Inject into native HTML5 audio element
+            audioPlayer.src = audioUrl;
+            resultPanel.style.display = 'block';
+        } catch (error) {
+            alert('Error processing file. Ensure it is a valid, uncompressed WAV file.');
+            console.error(error);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Bend Audio';
+        }
+    });
+</script>
+
+</body>
+</html>
